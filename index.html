@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="bootstrap.min.css" rel="stylesheet" />
+    <title>Music App</title>
+  </head>
+  <body>
+    <h2 class="text-center mt-4">Admin Section - Add Music</h2>
+    <div class="col-7 mx-auto border my-5 shadow-sm">
+      <div class="row mb-3">
+        <div class="col-8 p-4">
+          <div class="mb-3">
+            <label class="form-label">Music File</label>
+            <input
+              id="MusicName"
+              type="text"
+              placeholder="Enter the Music Name"
+              class="form-control mb-3"
+            />
+          </div>
+
+          <div class="mb-3">
+            <label for="" class="form-label">Upload Music Picture</label>
+            <input
+              class="form-control"
+              id="MusicPicFile"
+              type="file"
+              accept="image/x-png,image/gif,image/jpeg"
+            />
+          </div>
+
+          <div class="mb-3">
+            <label for="" class="form-label">Upload Music</label>
+            <input
+              class="form-control"
+              id="MusicFile"
+              type="file"
+              accept="audio/mp3"
+            />
+          </div>
+
+          <p class="progress-text"></p>
+          <div class="progress my-4">
+            <div
+              class="progress-bar progress-bar-striped"
+              role="progressbar"
+              id="progressBar"
+              aria-valuenow="10"
+              aria-valuemin="0"
+              aria-valuemax="100"
+            ></div>
+          </div>
+
+          <button
+            class="form-control btn btn-warning"
+            id="uploadMusic"
+            onclick="upload_music()"
+          >
+            Upload Music
+          </button>
+          <button
+            class="form-control btn btn-secondary my-3"
+            id="DisplayMusic"
+            onclick="display_music()"
+          >
+            Display Music
+          </button>
+        </div>
+        <div class="col-4 bg-warning">
+          <h1 class="text-dark text-wrap">Opic Music App</h1>
+        </div>
+      </div>
+    </div>
+    <div class="w-50 d-flex m-auto justify-content-center my-4">
+      <button class="btn btn-warning">
+        <a href="musiclist.html"> Go to Music List </a>
+      </button>
+    </div>
+
+    <script type="module">
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-app.js";
+      import {
+        getDatabase,
+        ref as RTdatabase,
+        set,
+        onValue,
+      } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-database.js";
+      import {
+        getStorage,
+        ref as refStorage,
+        uploadBytesResumable,
+        uploadBytes,
+        getDownloadURL,
+      } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-storage.js";
+
+      // TODO: Add SDKs for Firebase products that you want to use
+      // https://firebase.google.com/docs/web/setup#available-libraries
+
+      // Your web app's Firebase configuration
+      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+      const firebaseConfig = {
+        apiKey: "AIzaSyDZ908A8pLK8IgexpXXS_cdk6odeozfdJ0",
+        authDomain: "sqi-project1.firebaseapp.com",
+        databaseURL: "https://sqi-project1-default-rtdb.firebaseio.com",
+        projectId: "sqi-project1",
+        storageBucket: "sqi-project1.appspot.com",
+        messagingSenderId: "645864231431",
+        appId: "1:645864231431:web:9b82b7cef2149dac21d0a2",
+        measurementId: "G-9CRH2H144Y",
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const database = getDatabase();
+      const storage = getStorage();
+      const TitleRTDatabase = RTdatabase(database, "Sqi-project1-music");
+
+      //when we clikc on upload the new music title should be added to the realtime database with an ID of the next number eg, 1,2,3,4,5,6
+      //gives an id represntation of number incresingly from 0 ,1,2,3...
+      let titleIndex = 0;
+      let TitleArray = [];
+      onValue(TitleRTDatabase, function (snapshot) {
+        TitleArray = snapshot.val();
+        showSongs();
+        if (TitleArray) {
+          titleIndex = TitleArray.length;
+        } else {
+          titleIndex = 0;
+        }
+      });
+
+      //when the upload Music button is clicked
+
+      window.upload_music = () => {
+        //get the values in and store it in a variable
+        let musicTitle = document.getElementById("MusicName").value;
+        let musicFile = document.getElementById("MusicFile").files[0];
+        let musicPicture = document.getElementById("MusicPicFile").files[0];
+        //send the titile and files to the firebase storage
+
+        //create a reference to where to save the files to the storage
+        let MusicLocation = refStorage(storage, "sqi-project1/" + musicTitle);
+        let PicsLocation = refStorage(storage, "sqi-picture/" + musicTitle);
+
+        //Upload the music File to the Loation and assign the action to a variable
+        let upload = uploadBytesResumable(MusicLocation, musicFile);
+        //upload the picture file to the variable asisgned for its location
+        let uploadPic = uploadBytesResumable(PicsLocation, musicPicture);
+        RTdatabase(database, "Sqi-project1-music/" + titleIndex);
+        let musicPackage = {
+          musicTitle: musicTitle,
+          Shoe: 2,
+          Musiclink: "MusicLink",
+          musicPic: "musicPic",
+        };
+
+        let musicLink;
+        let musicfile;
+        async function addPicture(name) {
+          let musicPic = await getDownloadURL(
+            refStorage(storage, "sqi-picture/" + name)
+          );
+          return musicPic;
+        }
+        async function addMusic(name) {
+          let musicLink = await getDownloadURL(
+            refStorage(storage, "sqi-project1/" + name)
+          );
+          return musicLink;
+        }
+
+        //upload the picture
+        uploadBytes(PicsLocation, musicPicture).then((snapshot) => {
+          console.log("Uploaded the image");
+          addPicture(musicTitle).then(function (item) {
+            console.log(item + "answer121");
+            musicLink = item;
+            musicPackage.musicPic = item;
+          });
+        });
+
+        uploadBytes(MusicLocation, musicFile).then((snapshot) => {
+          console.log("Uploaded the Music");
+          addMusic(musicTitle).then(function (item) {
+            console.log(item);
+            musicPackage.Musiclink = item;
+            // RTdatabase(database, "Sqi-project1-music/" + titleIndex);
+            set(
+              RTdatabase(database, "Sqi-project1-music/" + titleIndex),
+              musicPackage
+            );
+          });
+        });
+
+        // show what will happen while uploading to let the user know the upload is complete
+        upload.on("state_changed", function (snapshot) {
+          //get what is currently being tranffered/uploaded
+          let tramsferred = snapshot.bytesTransferred;
+
+          // get the total file
+          let UploadedMusic = snapshot.totalBytes;
+
+          // give it a number value increment of the upload to represent it in a porgress bar
+          let progress = parseInt((tramsferred / UploadedMusic) * 100);
+
+          console.log(
+            "totalFile",
+            UploadedMusic,
+            "file uploading",
+            tramsferred
+          );
+
+          document.querySelector("#progressBar").style.width = progress + "%";
+          document.querySelector(".progress-text").innerHTML = progress + "%";
+
+          if (progress == 100) {
+            document.querySelector("#progressBar").classList.add("bg-success");
+            document.querySelector(".progress-text").innerHTML =
+              "Download Complete";
+          }
+        });
+      };
+
+      //disply the songs on the next page
+      window.showSongs = () => {
+        console.log(TitleArray);
+
+        TitleArray.map((item) => {
+          document.getElementById(
+            "container"
+          ).innerHTML += `     <div class="card col-3 m-1">
+              <img src=${item.musicPic} alt="" class="img-fluid" style="height:200px;">    
+              <p>${item.musicTitle}</p>
+              <audio controls src=${item.Musiclink} class="w-100 py-2"></audio></div>
+            </div>`;
+        });
+
+        //  TitleArray.map(async(item)=>{
+        // refStorage(storage, "sqi-project1/" + item);
+        // refStorage(storage , "sqi-picture/" + item )
+
+        //   //donwnload url for the audio
+
+        // //download url for the picture
+        // // getDownloadURL(musicPictureRefFIle).then((musicPicture) => {
+
+        // // let musicPcitureLink = musicPicture
+        // // return musicPcitureLink;
+        // // // document.getElementById("container").innerHTML += `<div class="col-4"><img src="${musicPicture}" class="img-fluid"> <h3></h3>  </div>` ;
+
+        // // })
+        // //   console.log(musicPcitureLink)
+
+        // })
+      };
+    </script>
+  </body>
+</html>
